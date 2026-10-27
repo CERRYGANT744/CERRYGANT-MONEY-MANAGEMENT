@@ -14,7 +14,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const DEFAULT_PIN = "cerrygantpass";
+const DEFAULT_PIN = "018730";
 let allEntries = []; 
 let dateNotes = {}; 
 let selectedSearchDate = ''; 
