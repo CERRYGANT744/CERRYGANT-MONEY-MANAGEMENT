@@ -1,0 +1,7 @@
+/* Custom mobile smooth scrolling and input adjustments */
+body {
+    -webkit-tap-highlight-color: transparent;
+}
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+}
