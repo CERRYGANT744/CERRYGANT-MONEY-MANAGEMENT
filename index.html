@@ -22,13 +22,13 @@
             <p class="text-xs text-slate-400 mb-6">ওয়েবসাইটে ঢুকতে পাসকোড (PIN) দিন</p>
             
             <form id="authForm" onsubmit="handleAuth(event)">
-                <input type="password" id="pinInput" placeholder="৪ ডিজিট পিন" maxlength="6" 
+                <input type="password" id="pinInput" placeholder="৪ ডিজিট পিন" maxlength="16" 
                     class="w-full text-center text-2xl tracking-widest bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 mb-4" required>
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition shadow-lg shadow-indigo-600/30">
                     লগইন করুন
                 </button>
             </form>
-            <p id="authError" class="text-red-400 text-xs mt-3 hidden">ভুল পিন দিয়েছেন! আবার চেষ্টা করুন।</p>
+            <p id="authError" class="text-red-400 text-xs mt-3 hidden">ভুল পিন দিয়েছেন! আবার চেষ্টা করুন።</p>
         </div>
     </div>
 
@@ -45,7 +45,7 @@
             </button>
         </header>
 
-        <!-- Navigation Tabs (২ টি পেজ সুইচ করার জন্য) -->
+        <!-- Navigation Tabs -->
         <div class="max-w-xl mx-auto px-4 mt-3">
             <div class="grid grid-cols-2 gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
                 <button onclick="switchTab('sales')" id="tabSalesBtn" class="py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white transition">
@@ -137,24 +137,24 @@
                     </form>
                 </div>
 
-                <!-- History List with Date Search/Filter -->
+                <!-- History List -->
                 <div class="space-y-3">
                     <h3 class="font-semibold text-slate-200 text-sm flex items-center justify-between">
-                        <span><i class="fa-solid fa-clock-rotate-left text-slate-400"></i> বিক্রয় ইতিহাস</span>
+                        <span><i class="fa-solid fa-clock-rotate-left text-slate-400"></i> তারিখভিত্তিক বিক্রয় পেজ ও নোট</span>
                         <span id="entryCount" class="text-xs font-normal text-slate-400">০ টি এন্ট্রি</span>
                     </h3>
 
                     <!-- Date Search Box -->
                     <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 flex flex-col gap-2">
-                        <label class="text-xs text-slate-300 font-medium">তারিখ অনুযায়ী নির্দিষ্ট পেজ বা হিস্ট্রি খুঁজুন:</label>
+                        <label class="text-xs text-slate-300 font-medium">নিদির্ষ্ট তারিখ ফিল্টার করুন:</label>
                         <div class="flex gap-2">
                             <input type="date" id="specificDateFilter" onchange="filterBySpecificDate(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 w-full focus:outline-none focus:border-indigo-500">
                             <button onclick="clearDateFilter()" id="clearDateBtn" class="hidden bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 text-xs rounded-lg">সব দেখুন</button>
                         </div>
                     </div>
 
-                    <div id="historyList" class="space-y-2.5">
-                        <!-- History items injected dynamically -->
+                    <div id="historyList" class="space-y-4">
+                        <!-- Date-wise grouped items injected dynamically -->
                     </div>
                 </div>
             </div>
@@ -168,10 +168,10 @@
                         </h3>
                         <span id="totalDueCount" class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">৳ 0 মোট বাকি</span>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4">যেকোনো তারিখের বাকি থাকা কাস্টমারদের তালিকা এখানে দেখা যাবে এবং পেমেন্ট পেলে বাকি আপডেট বা ক্লিয়ার করা যাবে।</p>
+                    <p class="text-xs text-slate-400 mb-4">প্রতিটি কাস্টমারের বাকি এডিট, নোট রাখা এবং ডিলিট করার সুবিধা।</p>
                     
-                    <div id="dueListPage" class="space-y-2.5">
-                        <!-- Due items injected dynamically -->
+                    <div id="dueListPage" class="space-y-3">
+                        <!-- Due items injected dynamically with customer note box -->
                     </div>
                 </div>
             </div>
