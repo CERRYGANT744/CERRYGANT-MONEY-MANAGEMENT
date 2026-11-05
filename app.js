@@ -18,6 +18,7 @@ const DEFAULT_PIN = "018730";
 let allEntries = []; 
 let dateNotes = {}; 
 let selectedSearchDate = ''; 
+let currentCart = []; // Multiple product cart array
 
 function setAutoDateTime() {
     const now = new Date();
@@ -107,51 +108,121 @@ function initApp() {
     });
 }
 
-window.calculatePreview = function() {
-    const cost = parseFloat(document.getElementById('costPrice').value) || 0;
-    const sell = parseFloat(document.getElementById('sellPrice').value) || 0;
-    const profit = sell - cost;
+// Multi-product Cart Handling Functions
+window.addCartItem = function() {
+    const name = document.getElementById('cartProductName').value.trim();
+    const qty = parseInt(document.getElementById('cartProductQty').value) || 1;
+    const cost = parseFloat(document.getElementById('cartCostPrice').value) || 0;
+    const sell = parseFloat(document.getElementById('cartSellPrice').value) || 0;
 
+    if(!name) {
+        alert("দয়া করে প্রোডাক্টের নাম লিখুন!");
+        return;
+    }
+
+    currentCart.push({
+        productName: name,
+        quantity: qty,
+        costPrice: cost * qty,
+        sellPrice: sell * qty,
+        unitCost: cost,
+        unitSell: sell
+    });
+
+    // Reset input fields for next item
+    document.getElementById('cartProductName').value = '';
+    document.getElementById('cartProductQty').value = '1';
+    document.getElementById('cartCostPrice').value = '';
+    document.getElementById('cartSellPrice').value = '';
+
+    renderCartUI();
+};
+
+window.removeCartItem = function(index) {
+    currentCart.splice(index, 1);
+    renderCartUI();
+};
+
+function renderCartUI() {
+    const container = document.getElementById('cartItemsList');
+    if(!container) return;
+
+    if(currentCart.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-500 italic">কোনো প্রোডাক্ট যোগ করা হয়নি (একাধিক প্রোডাক্ট যোগ করতে পারেন)</div>`;
+        document.getElementById('previewBox').classList.add('hidden');
+        return;
+    }
+
+    let html = '';
+    let totalCost = 0;
+    let totalSell = 0;
+
+    currentCart.forEach((item, idx) => {
+        totalCost += item.costPrice;
+        totalSell += item.sellPrice;
+        html += `
+            <div class="bg-slate-900 border border-slate-700 p-2 rounded-lg flex justify-between items-center text-xs">
+                <div>
+                    <span class="font-bold text-slate-200">${item.productName}</span> 
+                    <span class="text-indigo-400 font-semibold">(Qty: ${item.quantity})</span>
+                    <div class="text-[10px] text-slate-400">কেনা: ৳${item.costPrice} | বিক্রি: ৳${item.sellPrice}</div>
+                </div>
+                <button type="button" onclick="removeCartItem(${idx})" class="text-red-400 hover:text-red-300 px-2 py-1">❌</button>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    // Calculate preview for all cart items combined
+    const profit = totalSell - totalCost;
     const previewBox = document.getElementById('previewBox');
     const previewVal = document.getElementById('previewValue');
+    previewBox.classList.remove('hidden');
 
-    if(cost > 0 || sell > 0) {
-        previewBox.classList.remove('hidden');
-        if(profit >= 0) {
-            previewBox.className = "p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-medium flex justify-between items-center";
-            previewVal.innerText = `+৳ ${profit.toLocaleString('en-IN')} (লাভ)`;
-        } else {
-            previewBox.className = "p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-sm font-medium flex justify-between items-center";
-            previewVal.innerText = `-৳ ${Math.abs(profit).toLocaleString('en-IN')} (ক্ষতি)`;
-        }
+    if(profit >= 0) {
+        previewBox.className = "p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-medium flex justify-between items-center";
+        previewVal.innerText = `+৳ ${profit.toLocaleString('en-IN')} (মোট লাভ)`;
     } else {
-        previewBox.classList.add('hidden');
+        previewBox.className = "p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-sm font-medium flex justify-between items-center";
+        previewVal.innerText = `-৳ ${Math.abs(profit).toLocaleString('en-IN')} (মোট ক্ষতি)`;
     }
-};
+}
 
 window.handleAddEntry = async function(e) {
     e.preventDefault();
+    if(currentCart.length === 0) {
+        alert("দয়া করে অন্তত একটি প্রোডাক্ট কার್ಟে যোগ করুন!");
+        return;
+    }
+
     const dateTime = document.getElementById('entryDateTime').value;
-    const productName = document.getElementById('productName').value;
     const customerName = document.getElementById('customerName').value || 'General';
-    const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
-    const sellPrice = parseFloat(document.getElementById('sellPrice').value) || 0;
     const dueAmount = parseFloat(document.getElementById('dueAmount').value) || 0;
-    const profit = sellPrice - costPrice;
+
+    let totalCost = currentCart.reduce((sum, i) => sum + i.costPrice, 0);
+    let totalSell = currentCart.reduce((sum, i) => sum + i.sellPrice, 0);
+    let profit = totalSell - totalCost;
+    
+    // Combined product summary string for list display
+    let productNameSummary = currentCart.map(i => `${i.productName} (${i.quantity}টি)`).join(', ');
 
     try {
         await addDoc(collection(db, "cerrygant_sales"), {
             dateTime,
-            productName,
+            items: currentCart, // Multiple items with quantities saved as array
+            productName: productNameSummary,
             customerName,
             customerNote: '', 
-            costPrice,
-            sellPrice,
+            costPrice: totalCost,
+            sellPrice: totalSell,
             dueAmount,
             profit,
             createdAt: new Date()
         });
         
+        currentCart = [];
+        renderCartUI();
         document.getElementById('entryForm').reset();
         document.getElementById('previewBox').classList.add('hidden');
         setAutoDateTime();
@@ -194,16 +265,16 @@ window.editEntry = async function(id) {
     const item = allEntries.find(e => e.id === id);
     if (!item) return;
 
-    const newName = prompt("পণ্যের নতুন নাম দিন:", item.productName);
+    const newName = prompt("পণ্যের বিবরণ / নাম দিন:", item.productName);
     if (newName === null) return;
 
     const newCust = prompt("কাস্টমারের নাম দিন:", item.customerName || '');
     if (newCust === null) return;
 
-    const newCost = prompt("কেনা দাম (৳):", item.costPrice);
+    const newCost = prompt("মোট কেনা দাম (৳):", item.costPrice);
     if (newCost === null) return;
 
-    const newSell = prompt("বিক্রি দাম (৳):", item.sellPrice);
+    const newSell = prompt("মোট বিক্রি দাম (৳):", item.sellPrice);
     if (newSell === null) return;
 
     const newDue = prompt("বাকি বা Due (৳):", item.dueAmount || 0);
@@ -229,13 +300,13 @@ window.editEntry = async function(id) {
     }
 };
 
-// Due Update Function: Baki 0 korle Firestore-e dueAmount: 0 hobe.
-// Total entry delete hobe na, tai Sales Page-e record thakbe, shudhu Due Page theke 0 hobar karone hide hoye jabe.
+// Due Update Function: Baki 0 korle Firestore-e dueAmount: 0 hobe. 
+// Main sales page-er record thakbe, shudhu Due Page theke hide/remove hobe.
 window.updateDueAmount = async function(id) {
     const item = allEntries.find(e => e.id === id);
     if (!item) return;
 
-    const newDueInput = prompt(`কাস্টমার (${item.customerName || 'N/A'})-এর নতুন বাকি অ্যামাউন্ট দিন:`, item.dueAmount || 0);
+    const newDueInput = prompt(`কাস্টমার (${item.customerName || 'N/A'})-এর নতুন বাকি অ্যামাউন্ট দিন (০ দিলে বাকি শোধ হয়ে যাবে):`, item.dueAmount || 0);
     if(newDueInput === null) return;
 
     const updatedDue = parseFloat(newDueInput) || 0;
@@ -244,7 +315,7 @@ window.updateDueAmount = async function(id) {
         await updateDoc(doc(db, "cerrygant_sales", id), {
             dueAmount: updatedDue
         });
-        alert(updatedDue === 0 ? "বাকি ০ টাকা হয়েছে এবং বাকির খাতা থেকে রিমুভ করা হয়েছে! (সেলস পেজে হিস্ট্রি থাকবে)" : "বাকি সফলভাবে আপডেট করা হয়েছে!");
+        alert(updatedDue === 0 ? "বাকি ০ টাকা হয়েছে এবং বাকির খাতা থেকে রিমুভ করা হয়েছে! (সেলস পেজে মূল হিস্ট্রি অপরিবর্তিত থাকবে)" : "বাকি সফলভাবে আপডেট করা হয়েছে!");
         renderDuePage();
     } catch(err) {
         alert("এরর: " + err.message);
@@ -264,9 +335,9 @@ window.saveCustomerNote = async function(id) {
     }
 };
 
-// Pure Delete function (Sales page & Firestore theke pura entry delete korar jonno)
+// Pure Delete function (Only when user explicitly deletes from Sales history page)
 window.deleteEntry = async function(id) {
-    if(confirm("আপনি কি নিশ্চিত এই এন্ট্রি সম্পূর্ণ মুছে ফেলতে চান? (সেলস ও ডিউ উভয় জায়গা থেকে মুছে যাবে)")) {
+    if(confirm("আপনি কি নিশ্চিত এই এন্ট্রি সম্পূর্ণ মুছে ফেলতে চান? (এটি বিক্রয় ও ডিউ উভয় পেজ থেকেই চিরতরে মুছে যাবে)")) {
         await deleteDoc(doc(db, "cerrygant_sales", id));
     }
 };
@@ -330,7 +401,7 @@ function renderDateGroupedHistory(entries) {
                 <div class="border-b border-slate-700 pb-2.5 flex flex-col gap-1.5">
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-bold text-indigo-400"><i class="fa-solid fa-calendar-day mr-1"></i> ${formattedDateHeader}</span>
-                        <span class="text-[10px] text-slate-400">${dayItems.length} টি আইটেম</span>
+                        <span class="text-[10px] text-slate-400">${dayItems.length} টি ট্রানজাকশন</span>
                     </div>
                     <div class="grid grid-cols-3 gap-2 bg-slate-900/60 p-2 rounded-xl text-center">
                         <div>
@@ -396,7 +467,7 @@ function renderDuePage() {
     const totalDueCountEl = document.getElementById('totalDueCount');
     if(!dueListEl) return;
 
-    // Shudhu je entry-gulo te dueAmount > 0 thakbe shegulo Due Page-e dekhabe
+    // Only entries with dueAmount > 0 appear here
     const dueEntries = allEntries.filter(item => Number(item.dueAmount || 0) > 0);
     
     let totalDueSum = dueEntries.reduce((sum, item) => sum + Number(item.dueAmount || 0), 0);
@@ -421,7 +492,6 @@ function renderDuePage() {
                     </div>
                     <div class="flex items-center gap-1.5">
                         <button onclick="updateDueAmount('${item.id}')" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs px-2.5 py-1 rounded-lg hover:bg-amber-500/30 font-medium">বাকি পরিবর্তন/০</button>
-                        <button onclick="deleteEntry('${item.id}')" title="ডিলিট" class="bg-red-500/20 text-red-400 border border-red-500/30 text-xs p-1.5 rounded-lg">🗑️</button>
                     </div>
                 </div>
                 <div class="flex gap-2 items-center pt-2 border-t border-slate-800">
